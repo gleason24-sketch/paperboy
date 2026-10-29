@@ -45,7 +45,7 @@ Prefer not to run anything? The hosted version at [paperboyseo.com](https://pape
 | Search Console sync | Yes, with your own Google OAuth client | Yes, one click |
 | Fact check | Rule checks plus an open judge (rule-based, or Claude with your key) | The tuned hosted verifier |
 | Cross-site learning | No | Yes |
-| Hosted blog on your subdomain | Bring your own reverse proxy | Included |
+| Hosted blog on your subdomain | Not in this repo yet (needs the web app) | Included |
 | Dashboard | CLI and API for now | Web dashboard |
 | Support | Community, GitHub issues | Email |
 
@@ -89,7 +89,7 @@ The judge is a plug: `RuleJudge` needs no model at all (it scores how much of a 
 
 | Path | Contents |
 |---|---|
-| `packages/engine` | Topic selection and the SERP-strength gate, research, writing, the fact check, publish adapters (hosted blog, WordPress, Ghost, webhook, paste-in prompt), Search Console sync, the rank loop, and the self-host API server and worker. |
+| `packages/engine` | Topic selection and the SERP-strength gate, research, writing, the fact check, publish adapters (WordPress, Ghost, webhook, plus the hosted-blog and paste-in-prompt adapters that need the web app), Search Console sync, the rank loop, and the self-host API server and worker. |
 | `packages/db` | Postgres migrations and the runner. |
 | `packages/cli` | The `paperboy` command line tool. |
 | `docs/` | Self-host guide, fact-check method, REST API, MCP plan. |

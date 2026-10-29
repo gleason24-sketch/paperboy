@@ -7,9 +7,11 @@
   "scripts": {
     "install:all": "npm ci --prefix packages/engine && npm ci --prefix packages/cli && npm ci --prefix packages/db",
     "typecheck": "npm run typecheck --prefix packages/engine && npm run typecheck --prefix packages/cli",
-    "test": "npm test --prefix packages/engine && npm test --prefix packages/cli",
+    "test": "npm test --prefix packages/engine && npm test --prefix packages/cli && npm test --prefix packages/db",
     "build": "npm run build --prefix packages/cli",
     "scrub": "node scripts/scrub.mjs"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  }
 }

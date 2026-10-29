@@ -5,6 +5,14 @@
   "description": "Postgres schema (migrations) for the Paperboy engine.",
   "license": "AGPL-3.0-only",
   "type": "module",
-  "scripts": { "migrate": "node migrate.mjs" },
-  "dependencies": { "postgres": "^3.4.9" }
+  "scripts": {
+    "migrate": "node migrate.mjs",
+    "test": "node --test test/migrations.test.mjs"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13"
+  }
 }

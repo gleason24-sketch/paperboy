@@ -8,9 +8,11 @@ Honest status: this is v0.1, an alpha. What works is listed in the README. What 
 - [ ] MCP server (`packages/mcp`): the same tools as the CLI, over stdio first, then a remote HTTP endpoint.
 - [ ] Agent files generated from one source: Claude Code plugin, OpenClaw skill, Cursor rule, Codex instructions.
 - [ ] Typed SDK (`@paperboyseo/sdk`) generated from the OpenAPI document.
-- [ ] A small web dashboard for self-host (today the interface is the CLI and the API).
+- [ ] A small web dashboard for self-host, which also serves the hosted blog and the paste-in prompt feed (today the interface is the CLI and the API).
 - [ ] More publish adapters: Webflow, Framer, Shopify, Next.js snippet.
 - [ ] Model-agnostic writing layer (today the engine uses Claude and its web search tool).
+
+- [ ] Per-article `publish` flag on `POST /articles` (today the site's approval mode decides).
 
 ## Later
 
