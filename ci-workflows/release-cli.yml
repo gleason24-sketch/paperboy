@@ -1,0 +1,26 @@
+# Publishes @paperboyseo/cli to npm with provenance. Manual only: run it from the Actions tab after you have
+# added the NPM_TOKEN secret and checked the version in packages/cli/package.json.
+name: Release CLI
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm ci --prefix packages/cli
+      - run: npm test --prefix packages/cli
+      - run: npm run build --prefix packages/cli
+      - run: npm publish --provenance --access public
+        working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

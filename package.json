@@ -1,0 +1,15 @@
+{
+  "name": "paperboy-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "license": "AGPL-3.0-only",
+  "description": "Paperboy: the open-source growth engine. Each package installs on its own (no workspace hoisting).",
+  "scripts": {
+    "install:all": "npm ci --prefix packages/engine && npm ci --prefix packages/cli && npm ci --prefix packages/db",
+    "typecheck": "npm run typecheck --prefix packages/engine && npm run typecheck --prefix packages/cli",
+    "test": "npm test --prefix packages/engine && npm test --prefix packages/cli",
+    "build": "npm run build --prefix packages/cli",
+    "scrub": "node scripts/scrub.mjs"
+  },
+  "engines": { "node": ">=22" }
+}

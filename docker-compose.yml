@@ -1,0 +1,60 @@
+# Paperboy self-host: Postgres + API server + worker.
+#   cp .env.example .env   (fill it in)
+#   docker compose up --build
+# The server listens on http://localhost:3000.
+
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    SERVER_DATABASE_URL: postgres://paperboy_server:${PAPERBOY_DB_PASSWORD:?set PAPERBOY_DB_PASSWORD in .env}@db:5432/paperboy
+    DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/paperboy
+    NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: paperboy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d paperboy"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # Applies the migrations, sets the app role's password, creates the operator account. Runs once and exits.
+  migrate:
+    <<: *app
+    restart: "no"
+    environment:
+      SERVER_DATABASE_URL: postgres://paperboy_server:${PAPERBOY_DB_PASSWORD:?set PAPERBOY_DB_PASSWORD in .env}@db:5432/paperboy
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/paperboy
+      PAPERBOY_DB_SHIM: "1"
+    command: ["sh", "-c", "node ../db/migrate.mjs && npx tsx src/server/seed.ts"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *app
+    ports:
+      - "3000:3000"
+    command: ["npx", "tsx", "src/server/server.ts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *app
+    command: ["npx", "tsx", "src/server/worker.ts"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:

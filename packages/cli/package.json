@@ -1,0 +1,52 @@
+{
+  "name": "@paperboyseo/cli",
+  "version": "0.1.0",
+  "description": "Command line interface for Paperboy, the open-source growth engine that reads Search Console, picks topics, writes and fact-checks articles, publishes and measures.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "bin": {
+    "paperboy": "dist/cli.js",
+    "paperboy-seo": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gleason24-sketch/paperboy.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://paperboyseo.com/docs/cli",
+  "bugs": {
+    "url": "https://github.com/gleason24-sketch/paperboy/issues"
+  },
+  "keywords": [
+    "paperboy",
+    "seo",
+    "search-console",
+    "content",
+    "fact-check",
+    "cli",
+    "growth"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

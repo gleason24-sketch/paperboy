@@ -1,0 +1,33 @@
+name: Bug report
+description: Something does not work as documented.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Commands, flags, a small example. Remove keys and tokens first.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it run
+      options: [Docker Compose self-host, CLI against self-host, CLI against paperboyseo.com, Other]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output with `--json` if you can. Do not paste API keys or your .env.
+      render: shell
