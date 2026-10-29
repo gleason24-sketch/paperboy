@@ -4,7 +4,7 @@
 //   hourly                runJob("schedule")   decide what each site is due, restart stuck articles
 //   daily 06:15 UTC       runJob("gsc")        pull Search Console data
 //   Mondays 13:00 UTC     runJob("weekly")     weekly report
-//   daily 07:30 UTC       runJob("rankloop")   rank loop for every connected site
+//   (the rank loop starts per site at the end of the daily Search Console pull, in jobs.ts)
 // Run it with `tsx src/server/worker.ts`. SIGTERM and SIGINT stop it gracefully.
 import { pathToFileURL } from "node:url";
 import { sql as realSql } from "@/lib/db";
@@ -113,11 +113,6 @@ export function startWorker(opts: WorkerOptions = {}): Worker {
     }
   }
 
-  async function rankLoopAll() {
-    const sites = await db()`select id from sites where gsc_property is not null`;
-    for (const s of sites) await job("rankloop", { siteId: s.id });
-  }
-
   const every = (ms: number, fn: () => Promise<void>, firstInMs = ms) => {
     const arm = (wait: number) => {
       const t = setTimeout(() => {
@@ -150,7 +145,6 @@ export function startWorker(opts: WorkerOptions = {}): Worker {
   if (opts.jobs !== false) {
     every(HOUR, () => job("schedule"), 60_000);
     at(6, 15, () => job("gsc"));
-    at(7, 30, rankLoopAll);
     at(13, 0, () => job("weekly"), 1);
   }
   log(`started: polling every ${pollMs / 1000}s, ${concurrency} at a time${opts.jobs === false ? ", recurring jobs off" : ""}`);

@@ -34,7 +34,7 @@ You pay Anthropic directly. Defaults in `packages/engine/src/config/models.ts`: 
 
 ## Publishing
 
-Per site: the hosted blog (served by the API server at `/b/<slug>`; put your own reverse proxy and TLS in front for a custom domain), WordPress, Ghost, a webhook, or the paste-in prompt that lets any site read articles from the public feed.
+Per site, from the self-host server today: WordPress (application password), Ghost (Admin API key) and a signed webhook. The hosted blog on a subdomain and the paste-in prompt feed need the web app, which is not part of this repository yet (see the roadmap), so those two adapters exist in `src/lib/publish` but have nothing to serve them on a plain self-host.
 
 ## Upgrade and backup
 

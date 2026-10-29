@@ -7,6 +7,7 @@ create table if not exists public.gsc_daily_totals (
   impressions integer not null default 0,
   position double precision not null default 0,
   fetched_at timestamptz not null default now(),
+  source text not null default 'paperboy_oauth',
   primary key (site_id, date)
 );
 alter table public.gsc_daily_totals enable row level security; -- no policies: server only
@@ -17,3 +18,5 @@ grant select, insert, update on public.gsc_daily_totals to paperboy_server;
 alter table public.sites add column if not exists gsc_totals_fetched_at timestamptz;
 alter table public.sites add column if not exists gsc_error text;
 alter table public.sites add column if not exists gsc_error_at timestamptz;
+
+create index if not exists gsc_daily_totals_site_date on public.gsc_daily_totals (site_id, date desc);

@@ -13,7 +13,7 @@ The self-host server in this repository implements these routes. The CLI is the 
 | `GET /api/v1/sites/{id}` | One site: publish method, Search Console state, latest articles. |
 | `POST /api/v1/sites/{id}/gsc/connect` | Returns the Google OAuth URL to open in a browser. |
 | `POST /api/v1/sites/{id}/topics` | `{ n }` topic suggestions with the reason and signals for each. |
-| `POST /api/v1/sites/{id}/articles` | Start an article. `202` with `job_id` and `article_id`. |
+| `POST /api/v1/sites/{id}/articles` | Start an article. `202` with `job_id` and `article_id`. Whether it publishes by itself follows the site's approval setting; the `publish` flag in the body is accepted but not enforced yet. |
 | `GET /api/v1/jobs/{id}` | `queued`, `running`, `done` or `failed`, with the current step. |
 | `GET /api/v1/articles/{id}` | Title, status, URL and the verdict with its checks. |
 | `POST /api/v1/articles/{id}/publish` | Publish to the site's configured target. |

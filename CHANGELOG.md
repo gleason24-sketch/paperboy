@@ -4,7 +4,7 @@ All notable changes. Dates are UTC.
 
 ## 0.1.0 (unreleased)
 
-- First public cut of the open engine: topic selection with the SERP-strength gate, research, writing, the fact check, publish adapters (hosted blog, WordPress, Ghost, webhook, paste-in prompt), Search Console sync, rank loop.
+- First public cut of the open engine: topic selection with the SERP-strength gate, research, writing, the fact check, publish adapters (WordPress, Ghost, webhook; the hosted-blog and paste-in-prompt adapters need the web app), Search Console sync, rank loop.
 - Fact check: rule checks, the pluggable `Judge` interface, the open rule-based `RuleJudge`, a model judge for your own Anthropic key, and the optional hosted verifier.
 - Self-host: Docker Compose with Postgres, an API server, a worker and a migration job.
 - `@paperboyseo/cli`: connect, topics, write, check, publish, status, report, with `--json`.
