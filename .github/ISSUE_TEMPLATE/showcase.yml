@@ -1,0 +1,55 @@
+name: Add your site to the showcase
+description: List a site that runs the Paperboy engine. Opt-in, and no link exchange.
+title: "Showcase: <your domain>"
+labels: ["showcase"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for using Paperboy. A maintainer adds your entry to `sites.json` (see `SHOWCASE.md`). Listing is public, so only fill this in for a site you own or run.
+  - type: input
+    id: domain
+    attributes:
+      label: Domain
+      description: Bare hostname, no https:// and no path.
+      placeholder: example.com
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Display name
+      description: Up to 60 characters.
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - saas
+        - local business
+        - ecommerce
+        - publisher
+        - agency
+        - other
+    validations:
+      required: false
+  - type: input
+    id: note
+    attributes:
+      label: One plain sentence about the site (optional)
+      description: Up to 140 characters. No claims you cannot back up.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirm
+      options:
+        - label: I own or run this site and it publishes at least one article written with the Paperboy engine.
+          required: true
+        - label: I understand this is a public listing and I can ask to be removed at any time.
+          required: true
+        - label: I am not asking for or offering a link exchange.
+          required: true
