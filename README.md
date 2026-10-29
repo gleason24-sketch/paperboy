@@ -128,7 +128,7 @@ Writing costs real money on your own key. The engine stops an article that would
 
 ## Contributing
 
-Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first (short rules: open an issue before a large change, checkable claims only, tests for behavior you change). Security reports go through [SECURITY.md](SECURITY.md). Everyone follows the [code of conduct](CODE_OF_CONDUCT.md). Running Paperboy on your own site? You can be listed in the [showcase](SHOWCASE.md).
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first (short rules: open an issue before a large change, checkable claims only, tests for behavior you change). Security reports go through [SECURITY.md](SECURITY.md). Everyone follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Star the repo
 
