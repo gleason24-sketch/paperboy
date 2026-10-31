@@ -6,6 +6,7 @@ body:
     id: problem
     attributes:
       label: What are you trying to do
+      description: The problem first, not the solution.
     validations:
       required: true
   - type: textarea
@@ -16,3 +17,23 @@ body:
     id: alternatives
     attributes:
       label: What you do today instead
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Fact check
+        - Topic selection
+        - Publishing adapters
+        - Self-host and Docker
+        - CLI
+        - MCP
+        - REST API
+        - Docs
+        - Other
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contributing
+      options:
+        - label: I would be willing to send a pull request for this.

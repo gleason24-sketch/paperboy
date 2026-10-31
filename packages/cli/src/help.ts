@@ -10,6 +10,7 @@ Commands:
   publish <article-id>   Publish a drafted article
   status                 Show account, credits and site status
   report                 Search performance report for the site
+  mcp                    Run an MCP server on stdio, so an AI agent can use these commands as tools
 
 Global options:
   --json                 Print exactly one JSON object per command

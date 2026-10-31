@@ -4,10 +4,10 @@
 
 Please do not open a public issue for a security problem.
 
-- Use GitHub private vulnerability reporting: the "Report a vulnerability" button on the Security tab of this repository.
-- Or email hello@paperboyseo.com with the subject "Paperboy security".
+- Email **security@paperboyseo.com** with the subject "Paperboy security".
+- Or use GitHub private vulnerability reporting: the "Report a vulnerability" button on the Security tab of this repository.
 
-Include what you found, how to reproduce it, and the version or commit. You will get an answer within 3 business days. Please give us a reasonable window to fix it before you publish details.
+Include what you found, how to reproduce it, and the version or commit. You will get an answer within 3 business days. Please give us a reasonable window to fix it before you publish details. We credit reporters who want credit.
 
 ## Supported versions
 

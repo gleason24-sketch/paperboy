@@ -22,6 +22,8 @@ export interface MockState {
   checkMode: 'pass' | 'fail' | 'job';
   /** Whether POST /sites returns gsc_connect_url inline. */
   inlineGscUrl: boolean;
+  /** POST /gsc/connect answers 501 gsc_not_configured, like a self-host without a Google OAuth client. */
+  gscNotConfigured: boolean;
   publishResult: { published: boolean; url?: string };
 }
 
@@ -83,6 +85,7 @@ export async function startMock(): Promise<Mock> {
     jobPolls: 2,
     checkMode: 'pass',
     inlineGscUrl: true,
+    gscNotConfigured: false,
     publishResult: { published: true, url: 'https://example.com/blog/post' },
   };
 
@@ -133,7 +136,10 @@ export async function startMock(): Promise<Mock> {
       return json(res, 201, { site, ...(state.inlineGscUrl ? { gsc_connect_url: `${base}/gsc/start?site=site_new` } : {}) });
     }
     let match = p.match(/^\/api\/v1\/sites\/([^/]+)\/gsc\/connect$/);
-    if (m === 'POST' && match) return json(res, 200, { url: `${base}/gsc/start?site=${match[1]}` });
+    if (m === 'POST' && match) {
+      if (state.gscNotConfigured) return json(res, 501, { error: { code: 'gsc_not_configured', message: 'Search Console is not set up on this server.', request_id: 'req_501' } });
+      return json(res, 200, { url: `${base}/gsc/start?site=${match[1]}` });
+    }
 
     match = p.match(/^\/api\/v1\/sites\/([^/]+)$/);
     if (m === 'GET' && match) {

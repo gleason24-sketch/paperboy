@@ -263,11 +263,18 @@ describe("jobs and articles", () => {
     expect(ins.values).toContain(OWNER);
   });
 
-  it("requires a topic", async () => {
-    const { call } = await boot();
-    const r = await call("POST", `/api/v1/sites/${SITE}/articles`, { body: {} });
-    expect(r.status).toBe(400);
-    expect(r.json.error.code).toBe("invalid_request");
+  it("lets the pipeline pick the topic when none is sent", async () => {
+    const kickArticle = vi.fn(async () => {});
+    const { call, db } = await boot({ engine: { kickArticle } });
+    db.on(/from public\.sites where id = \? and owner_id = \?/, [{ id: SITE, owner_id: OWNER, domain: "example.com" }]);
+    db.on(/select count\(\*\)::int n from public\.articles/, [{ n: 0 }]);
+    db.on(/insert into public\.articles/, [{ id: ART }]);
+    const r = await call("POST", `/api/v1/sites/${SITE}/articles`, { body: { publish: false } });
+    expect(r.status).toBe(202);
+    expect(r.json).toEqual({ job_id: ART, article_id: ART });
+    const ins = db.find(/insert into public\.articles/)[0];
+    expect(ins.text).not.toContain("topic");
+    expect(kickArticle).toHaveBeenCalledWith(ART);
   });
 
   it("shows an article with its verdict mapped to verified and held claims", async () => {
@@ -370,6 +377,52 @@ describe("device flow", () => {
     const { base } = await boot({ env: {} });
     const res = await fetch(`${base}/device`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ user_code: "CDFG-HJKM", password: "", action: "approve" }) });
     expect(res.status).toBe(503);
+  });
+});
+
+describe("adding a site", () => {
+  const add = async (env: Record<string, string>) => {
+    const { call, db } = await boot({ env, engine: { scanSite: async () => ({ name: "Example" }) } });
+    db.on(/insert into public\.sites/, [{ id: SITE, domain: "example.com", url: "https://example.com", publish_method: "wordpress", plan: "starter" }]);
+    const r = await call("POST", "/api/v1/sites", { body: { url: "example.com" } });
+    expect(r.status).toBe(201);
+    return db.find(/insert into public\.sites/)[0];
+  };
+
+  it("holds passed articles for approval by default, so a fresh self-host never publishes by itself", async () => {
+    const ins = await add({});
+    expect(ins.text).toContain("approval_mode");
+    expect(ins.values).toContain("approve");
+    expect(ins.values).not.toContain("autopilot");
+  });
+
+  it("lets PAPERBOY_APPROVAL_MODE=autopilot turn publishing on", async () => {
+    expect((await add({ PAPERBOY_APPROVAL_MODE: "autopilot" })).values).toContain("autopilot");
+  });
+});
+
+describe("publishing", () => {
+  it("tests and saves a publishing target for the owner's site", async () => {
+    const savePublishing = vi.fn(async () => ({ ok: true, message: "Connected as Ed." }));
+    const { call, db } = await boot({ engine: { savePublishing } });
+    db.on(/from public\.sites where id = \? and owner_id = \?/, [{ id: SITE, owner_id: OWNER, domain: "example.com" }]);
+    const body = { method: "wordpress", wp_url: "https://blog.example.com", wp_user: "ed", wp_app_password: "abcd efgh" };
+    const r = await call("POST", `/api/v1/sites/${SITE}/publishing`, { body });
+    expect(r.status).toBe(200);
+    expect(r.json).toEqual({ saved: true, method: "wordpress", message: "Connected as Ed." });
+    expect(savePublishing).toHaveBeenCalledWith(expect.objectContaining({ id: SITE }), body);
+    expect(db.find(/from public\.sites where id/)[0].values).toEqual([SITE, OWNER]);
+  });
+
+  it("returns 422 with the reason when the connection test fails", async () => {
+    const savePublishing = vi.fn(async () => ({ ok: false, message: "WordPress turned down the username or application password." }));
+    const { call, db } = await boot({ engine: { savePublishing } });
+    db.on(/from public\.sites where id = \? and owner_id = \?/, [{ id: SITE, owner_id: OWNER }]);
+    const r = await call("POST", `/api/v1/sites/${SITE}/publishing`, { body: { method: "wordpress" } });
+    expect(r.status).toBe(422);
+    expect(r.json.error.code).toBe("publishing_not_saved");
+    const bad = await call("POST", `/api/v1/sites/${SITE}/publishing`, { body: { method: "ftp" } });
+    expect(bad.status).toBe(400);
   });
 });
 

@@ -9,6 +9,7 @@ import { VERSION } from './version.js';
 import type { FetchFn } from './api.js';
 import { check } from './commands/check.js';
 import { connect } from './commands/connect.js';
+import { mcp } from './commands/mcp.js';
 import { publish } from './commands/publish.js';
 import { report } from './commands/report.js';
 import { status } from './commands/status.js';
@@ -28,7 +29,7 @@ export interface RunOptions {
   interactive?: boolean;
 }
 
-const COMMANDS: Record<string, Command> = { connect, topics, write, check, publish, status, report };
+const COMMANDS: Record<string, Command> = { connect, topics, write, check, publish, status, report, mcp };
 
 async function defaultConfirm(question: string): Promise<boolean> {
   const rl = createInterface({ input: process.stdin, output: process.stderr });

@@ -15,12 +15,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gleason24-sketch/paperboy.git",
+    "url": "git+https://github.com/paperboyseo/paperboy.git",
     "directory": "packages/cli"
   },
   "homepage": "https://paperboyseo.com/docs/cli",
   "bugs": {
-    "url": "https://github.com/gleason24-sketch/paperboy/issues"
+    "url": "https://github.com/paperboyseo/paperboy/issues"
   },
   "keywords": [
     "paperboy",

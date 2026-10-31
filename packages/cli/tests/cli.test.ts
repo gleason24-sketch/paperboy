@@ -127,6 +127,16 @@ describe('connect: site and Search Console', () => {
     expect(r.opened).toContain(`${mock.url}/gsc/start?site=site_new`);
   });
 
+  it('keeps going when the server has no Google OAuth client (self-host without Search Console)', async () => {
+    mock.state.inlineGscUrl = false;
+    mock.state.gscNotConfigured = true;
+    const r = await cli(['connect', 'shop.example', '--self-host', mock.url]);
+    expect(r.code).toBe(0);
+    expect(r.stdout + r.stderr).toContain('Search Console is not set up on this server');
+    expect(readSaved(r.configDir).default_site).toBe('site_new');
+    expect(mock.callsTo('GET', '/api/v1/sites/site_new')).toHaveLength(0);
+  });
+
   it('--no-wait prints the link and does not poll', async () => {
     const r = await cli(['connect', 'https://shop.example', '--self-host', mock.url, '--no-wait', '--json']);
     expect(r.code).toBe(0);

@@ -36,6 +36,7 @@ export type Engine = {
   scanSite(url: string): Promise<Row | null>;
   finalizePublish(articleId: string): Promise<{ ok: boolean; message: string }>;
   fetchPage(url: string, timeoutMs?: number): Promise<PageLike>;
+  savePublishing(site: Row, input: Record<string, string | undefined>): Promise<{ ok: boolean; message: string }>;
   /** `local` forces the open local verifier (used by POST /verify so a hosted setting can never loop back to itself). */
   verify(input: QualityInput, ctx: { ownerId: string; local?: boolean }): Promise<Verdict>;
 };
@@ -137,6 +138,10 @@ function defaultEngine(): Engine {
     async finalizePublish(id) {
       const { finalizePublish } = await import("@/lib/engine/pipeline");
       return finalizePublish(id);
+    },
+    async savePublishing(site, input) {
+      const { savePublishing } = await import("@/lib/publish/settings");
+      return savePublishing(site as never, input as never);
     },
     async fetchPage(url, timeoutMs) {
       const { fetchPage } = await import("@/lib/fetchpage");
@@ -492,18 +497,37 @@ export function createServer(opts: ServerOptions = {}): http.Server {
       log(`[server] scan of ${domain} failed: ${e instanceof Error ? e.message : String(e)}`);
     }
     const plan = ["free", "starter", "growth", "pro"].includes(c.env.PAPERBOY_DEFAULT_PLAN ?? "") ? c.env.PAPERBOY_DEFAULT_PLAN! : "starter";
+    // A self-host starts careful: the article passes the fact check, then waits for `paperboy publish`. PAPERBOY_APPROVAL_MODE=autopilot publishes by itself.
+    const approval = c.env.PAPERBOY_APPROVAL_MODE === "autopilot" ? "autopilot" : "approve";
     const slug = `${slugify(domain, 50) || "site"}-${randomBytes(3).toString("hex")}`;
     const d = c.db();
     const json = (v: unknown) => (typeof (d as any).json === "function" ? (d as any).json(v) : JSON.stringify(v));
-    const [site] = await d`insert into public.sites (owner_id, url, domain, name, slug, scan, cta_text, cta_url, publish_method, plan, subscription_status)
+    const [site] = await d`insert into public.sites (owner_id, url, domain, name, slug, scan, cta_text, cta_url, publish_method, plan, subscription_status, approval_mode)
       values (${a.ownerId}, ${url}, ${domain}, ${String(scan.name || domain).slice(0, 200)}, ${slug}, ${json(scan)}, ${String(scan.cta_text ?? "").slice(0, 200)},
-        ${String(scan.cta_url ?? url).slice(0, 500)}, ${body.publish_method ?? c.env.PAPERBOY_PUBLISH_METHOD ?? "hosted"}, ${plan}, ${plan === "free" ? null : "active"})
+        ${String(scan.cta_url ?? url).slice(0, 500)}, ${body.publish_method ?? c.env.PAPERBOY_PUBLISH_METHOD ?? "hosted"}, ${plan}, ${plan === "free" ? null : "active"}, ${approval})
       returning *`;
     const link = await gscConnectUrl(c, site).catch(() => undefined);
     return { status: 201, json: { site: publicSite(site), ...(link ? { gsc_connect_url: link } : {}) } };
   });
 
   route("GET", "/api/v1/sites/:id", true, async (c, p) => ({ status: 200, json: { site: publicSite(await getSite(c, p.id)) } }));
+
+  // Where articles go: WordPress, Ghost or a signed webhook. The connection is tested before anything is saved, and the secrets stay server side.
+  route("POST", "/api/v1/sites/:id/publishing", true, async (c, p) => {
+    const site = await getSite(c, p.id);
+    const body = await c.json(
+      z.object({
+        method: z.enum(["hosted", "prompt", "wordpress", "ghost", "webhook"]),
+        blog_base_url: z.string().max(500).optional(),
+        wp_url: z.string().max(500).optional(), wp_user: z.string().max(200).optional(), wp_app_password: z.string().max(200).optional(),
+        ghost_url: z.string().max(500).optional(), ghost_admin_key: z.string().max(300).optional(),
+        webhook_url: z.string().max(500).optional(),
+      }),
+    );
+    const r = await engine.savePublishing(site, body);
+    if (!r.ok) throw new ApiError(422, "publishing_not_saved", r.message);
+    return { status: 200, json: { saved: true, method: body.method, message: r.message } };
+  });
 
   route("POST", "/api/v1/sites/:id/gsc/connect", true, async (c, p) => ({ status: 200, json: { url: await gscConnectUrl(c, await getSite(c, p.id)) } }));
 
@@ -575,7 +599,6 @@ export function createServer(opts: ServerOptions = {}): http.Server {
   route("POST", "/api/v1/sites/:id/articles", true, async (c, p) => {
     const a = need(c);
     const body = await c.json(z.object({ topic_id: z.string().optional(), topic: z.string().min(3).max(300).optional(), publish: z.boolean().optional() }).passthrough());
-    if (!body.topic_id && !body.topic) throw new ApiError(400, "invalid_request", "Send topic_id (from the topics list) or topic (your own title or idea).");
     const site = await getSite(c, p.id);
     const d = c.db();
     const [busy] = await d`select count(*)::int n from public.articles where site_id = ${site.id} and owner_id = ${a.ownerId} and status in ('planned', 'picking', 'researching', 'writing', 'checking', 'fixing', 'publishing')`;
@@ -587,10 +610,13 @@ export function createServer(opts: ServerOptions = {}): http.Server {
       if (!idea) throw new ApiError(404, "topic_not_found", "No such topic for this site.");
       if (idea.status === "used") throw new ApiError(409, "topic_used", "That topic already became an article.");
     }
-    const text = String(idea?.text ?? body.topic).trim();
-    const [art] = await d`insert into public.articles (site_id, owner_id, status, kind, topic, target_query, angle, intent, reason)
-      values (${site.id}, ${a.ownerId}, 'planned', 'new', ${text}, ${idea?.target_query ?? text}, ${idea?.angle ?? ""}, ${idea?.intent ?? "learning"},
-        ${idea?.reason ?? "Requested through the API."}) returning id`;
+    // With no topic, the article starts empty and the pipeline picks one (your own ideas first, then Search Console data, behind the SERP gate), like the hourly schedule does.
+    const text = idea?.text ?? body.topic;
+    const [art] = text
+      ? await d`insert into public.articles (site_id, owner_id, status, kind, topic, target_query, angle, intent, reason)
+          values (${site.id}, ${a.ownerId}, 'planned', 'new', ${String(text).trim()}, ${idea?.target_query ?? String(text).trim()}, ${idea?.angle ?? ""}, ${idea?.intent ?? "learning"},
+            ${idea?.reason ?? "Requested through the API."}) returning id`
+      : await d`insert into public.articles (site_id, owner_id, status, kind) values (${site.id}, ${a.ownerId}, 'planned', 'new') returning id`;
     if (idea) await d`update public.topic_ideas set status = 'used', article_id = ${art.id} where id = ${idea.id} and owner_id = ${a.ownerId}`;
     // Start it now; the worker also claims any planned article, and the pipeline's lock keeps the two from clashing.
     await engine.kickArticle(art.id).catch((e) => log(`[server] could not start article ${art.id}: ${e instanceof Error ? e.message : String(e)}`));

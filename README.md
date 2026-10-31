@@ -1,145 +1,208 @@
 <div align="center">
 
-<!-- Logo: the site icon from https://paperboyseo.com/icon.svg -->
-<img src="docs/assets/logo.svg" alt="Paperboy logo" width="96" height="96">
+<img src="docs/assets/logo.svg" alt="Paperboy logo" width="72" height="72">
 
 # Paperboy
 
-**Articles that rank, written and published for you, with every number checked.**
-
-The open-source growth engine. It reads your Google Search Console, picks what to write, researches it, writes it, fact-checks every claim against its source, publishes it, and learns from what happens next.
+**The open-source SEO article engine that checks every claim against its source before it publishes, and holds the article if it cannot.**
 
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-![Status: alpha](https://img.shields.io/badge/status-v0.1%20alpha-orange.svg)
+[![GitHub stars](https://img.shields.io/github/stars/paperboyseo/paperboy?style=flat&logo=github)](https://github.com/paperboyseo/paperboy/stargazers)
 ![Node 22+](https://img.shields.io/badge/node-%E2%89%A522-339933.svg)
+![Status: alpha](https://img.shields.io/badge/status-v0.1%20alpha-orange.svg)
 
-[Cloud: first article free, no card](https://paperboyseo.com) · [Docs](https://paperboyseo.com/docs) · [Self-host guide](docs/self-host.md) · [Roadmap](ROADMAP.md) · [Release notes](docs/releases/v0.1.0.md)
+[Self-host in 60 seconds](#60-second-quickstart) · [How the fact check works](#how-the-fact-check-works) · [Use it from an AI agent (MCP)](#mcp-use-it-from-an-ai-agent) · [Paperboy Cloud](https://paperboyseo.com)
 
 <br>
 
-<!-- Screenshot of https://paperboyseo.com at 1440x900, captured 2026-10-29. Replace docs/assets/hero.png with a product shot any time. -->
-<img src="docs/assets/hero.png" alt="Paperboy: a topic picked from Search Console data, and a fact check showing every cited claim checked against its source" width="900">
+<img src="docs/demo.gif" alt="paperboy check on a draft: one claim is VERIFIED, one is a MISMATCH because 35 percent is not in the cited source" width="900">
 
 </div>
 
-> **Status: v0.1 alpha.** The engine, the fact check, the database, the self-host server, the Docker setup and the CLI are in this repository and tested. The MCP server and the agent plugins are **not** in this repository yet (the MCP server runs on the hosted cloud): see [Use with your agent](#use-with-your-agent) and the [roadmap](ROADMAP.md). The CLI is not on npm yet, so the quickstart runs it from source.
+Paperboy reads your Google Search Console, picks a topic you can actually rank for, researches it on the live web, writes the article with Claude, and then does the step most AI writers skip: it compares the draft with the exact source text it saved while researching. Numbers that are not in the cited page, links to pages it never read, and claims the source does not support block the article. An article that still fails after one fix pass is held for a human and never published.
 
-## Why Paperboy
-
-- **Topics come from your own data.** It reads Search Console, finds queries where you already show up (page two, rising impressions), and checks whether the results page is beatable before it writes anything. `paperboy topics` shows what it would write and why.
-- **Every claim is checked against its source.** Numbers must appear in the text of the page they cite. Links must point at pages that were actually read. A held article gets one rewrite, and if it still fails it is not published.
-- **It closes the loop.** It publishes to WordPress, Ghost or a signed webhook, then measures the result and feeds it back into the next pick.
-- **Open, scriptable, yours.** AGPL-3.0, one Docker Compose file, a REST API, and a CLI with a stable `--json` mode for scripts and agents. You bring your own Anthropic key and pay it directly, with hard cost caps per article.
+You bring your own Anthropic key and your own Postgres. It is one `docker compose up`.
 
 ## 60-second quickstart
 
-You need Docker, Node 22 or newer, and an [Anthropic API key](https://console.anthropic.com).
+You need Docker and an [Anthropic API key](https://console.anthropic.com).
 
 ```bash
-git clone https://github.com/gleason24-sketch/paperboy.git
-cd paperboy
-cp .env.example .env        # set ANTHROPIC_API_KEY, the passwords, and PAPERBOY_ADMIN_EMAIL / PAPERBOY_ADMIN_PASSWORD
-docker compose up --build   # Postgres + API server + worker, on http://localhost:3000
+git clone https://github.com/paperboyseo/paperboy.git && cd paperboy
+cp .env.example .env        # set ANTHROPIC_API_KEY, PAPERBOY_ADMIN_EMAIL and PAPERBOY_ADMIN_PASSWORD; change the passwords
+docker compose up --build   # Postgres, migrations, API server and worker on http://localhost:3000
 ```
 
-Then, in a second terminal:
+On every start the `migrate` service applies any new database migrations, sets the app role's password and creates your operator account, then the API server and the worker come up. Check it with `curl http://localhost:3000/api/health`.
+
+Drive it with the CLI. It is not published to npm, so run it from source (Node 22 or newer):
 
 ```bash
 npm ci --prefix packages/cli && npm run build --prefix packages/cli
 alias paperboy="node $PWD/packages/cli/dist/cli.js"
 
 paperboy connect https://your-site.com --self-host http://localhost:3000
-paperboy topics             # what it would write next, and why
-paperboy write --wait       # research, write, fact check, then publish or hold
+paperboy check https://your-site.com/some-article   # fact check any live page, no Anthropic key needed
+paperboy topics                                      # what it would write next, and why
+paperboy write --wait                                # research, write, fact check; then it waits for your OK, or is held if it fails
+paperboy publish <article-id>                        # publish a passed article to the site's target
 ```
 
-`connect` prints a URL and a code. Open the URL, enter the code, and sign in with the admin email and password from your `.env`. Search Console needs your own Google OAuth client (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`, steps in [docs/self-host.md](docs/self-host.md)); without it, `paperboy check <url or file.md>` still fact-checks any page or draft.
+`connect` prints a URL and a code. Open the URL, enter the code and your `PAPERBOY_ADMIN_PASSWORD`. Nothing is spent on your Anthropic key until you run `paperboy write`: the worker's schedule is off (`PAPERBOY_ARTICLES_PER_WEEK=0`), and a passed article waits for your `publish`. Two steps in the [self-host guide](docs/self-host.md) turn it into a full loop: Search Console needs your own Google OAuth client, and publishing needs a target (WordPress, Ghost or a signed webhook) saved with one API call.
 
-Prefer not to run anything? The hosted version at [paperboyseo.com](https://paperboyseo.com) writes your first article free, no card.
+Prefer not to run anything? [Paperboy Cloud](https://paperboyseo.com) runs it for you.
 
-## The CLI
+## How the fact check works
 
-`@paperboyseo/cli` installs a `paperboy` command (also `paperboy-seo`). Every command takes `--json` and works against the cloud or your own server (`--base-url`, or `connect --self-host`).
+This is the part that is different, so here is what the code does (`packages/engine/src/lib/quality`, `packages/engine/src/lib/engine/pipeline.ts`).
 
-| Command | What it does |
-|---|---|
-| `paperboy connect [site-url]` | Log in with the OAuth device flow, add your site, connect Search Console. Flags: `--self-host <url>`, `--api-key <key>`, `--no-wait`, `--no-open`. |
-| `paperboy topics [-n 5]` | Show what it would write next and why: the query, the position, the impressions, the SERP-gate result. |
-| `paperboy write [--topic <id or text>] [--publish] [--wait]` | Research, write, fact check. Waits and prints the verdict. |
-| `paperboy check <url or file.md> [--sources file]` | Fact check any URL or draft. Exit code 0 on pass, 1 on hold, so it works in CI. |
-| `paperboy publish <article-id>` | Publish an approved article to the site's configured target. |
-| `paperboy status` | Account, site, publishing target, Search Console state, latest articles. |
-| `paperboy report [--days 28] [--markdown]` | Clicks, impressions and position, with a sparkline. |
+```mermaid
+flowchart TD
+  A["Pick a topic<br/>Search Console data + SERP-strength gate"] --> B["Research<br/>web search, read up to 6 pages"]
+  B --> C[("Save the exact text of every page read<br/>article_sources")]
+  C --> D["Write the draft<br/>every factual sentence links its source"]
+  D --> E["Rule checks, no model<br/>numbers are in the cited text<br/>links point at pages that were read<br/>banned claims, house style"]
+  E --> F["Judge<br/>each cited sentence vs the best passages of its source"]
+  F --> G{"No blocking issue<br/>and score 70 or more?"}
+  G -- yes --> H["Publish, or wait for your approval"]
+  G -- no --> I["One fix pass<br/>only the flagged paragraphs"]
+  I --> J["Check again"]
+  J -- passes --> H
+  J -- still fails --> K["HELD: status needs_review<br/>never published"]
+```
 
-Global flags: `--json`, `--site <id|domain>`, `--api-key`, `--base-url`, `--no-color`, `-y/--yes`, `-h`, `-v`. Exit codes: 0 ok, 1 fact check failed or nothing published, 2 error. Details and JSON shapes: [packages/cli/README.md](packages/cli/README.md).
+1. **The sources are saved, not remembered.** While researching, Paperboy reads up to 6 pages and stores the text of each one (up to 24,000 characters per page). Your own pricing or product page is saved the same way, so claims about your own offer are checked too. Every check below runs against those stored texts.
+2. **Rule checks run first and need no model.** A number in a cited sentence must appear in the text of the page it links. A link must point at a page that was actually read. A source that sells something related must be disclosed. Banned claims and banned words are matched exactly. A shown calculation is checked through its inputs. Bare small integers and years are not treated as statistics.
+3. **Then a judge reads each cited sentence next to the passages of its source that overlap it most** and answers `supported`, `partly_supported` or `not_supported`. With `ANTHROPIC_API_KEY` set the judge is Claude Haiku 4.5. With no key it falls back to `RuleJudge`, a deterministic word-overlap score that needs no model. The judge also flags unsourced specific claims, opinions stated as facts, and voice drift.
+4. **The verdict is mechanical.** Six checks (every claim has a source, numbers match their sources, sources say what the article says, voice, banned claims, house style). Each blocking issue costs 12 points and each warning 2 (capped at 20). An article passes with zero blocking issues and a score of at least 70. Every issue carries the quoted sentence, the problem and the fix.
+5. **Fail closed.** A failing article gets one fix pass on the flagged paragraphs, then the whole check runs again. If it still fails, the article goes to `needs_review` and is not published. The verdicts are saved per round, and if you disagree you can publish anyway through the API with `{"force": true}`.
 
-## Self-host or cloud
+What this does not do: it cannot tell whether a source is right, only whether the article says what the source says. The open `RuleJudge` is a baseline and will accept a paraphrase that overlaps the source's wording. The model judge is stronger; Paperboy Cloud runs a further-tuned verifier. Read [docs/fact-check.md](docs/fact-check.md) for the full method and how to plug in your own verifier.
 
-|  | Self-host (this repo) | Cloud ([paperboyseo.com](https://paperboyseo.com)) |
+You can run the check on anything, not only Paperboy articles:
+
+```bash
+paperboy check draft.md      # exit code 0 on pass, 1 on hold, so it works in CI
+paperboy check https://example.com/blog/post
+```
+
+## Self-host or Cloud
+
+| | Self-host (this repo) | [Paperboy Cloud](https://paperboyseo.com) |
 |---|---|---|
-| Price | Free. You pay your own Anthropic bill. | Per site, per month. See [pricing](https://paperboyseo.com/pricing). First article free, no card. |
-| The loop (topics, research, writing, publish, rank loop) | Yes | Yes |
-| Search Console sync | Yes, with your own Google OAuth client | Yes, one click |
-| Fact check | Rule checks plus an open judge (rule-based, or Claude with your key) | The tuned hosted verifier |
+| Who runs it | You | We do |
+| Price | Free. You pay your own Anthropic bill. | Per site, per month. First article free, no card. See [pricing](https://paperboyseo.com/pricing). |
+| Model key | Your Anthropic key | Included |
+| Database | Your Postgres (bundled in Docker Compose) | Managed |
+| The loop: topics, research, writing, fact check, publish, rank loop | Yes | Yes |
+| Search Console | Yes, with your own Google OAuth client | One-click connect |
+| Where articles go | WordPress, Ghost, signed webhook | Those, plus a hosted blog on your subdomain |
+| Fact check | Open: rules plus Claude (your key) or `RuleJudge` | The tuned hosted verifier |
 | CLI and REST API | Yes | Yes |
-| MCP server for agents | Not in this repo yet (use the CLI with `--json`) | Yes, at `https://paperboyseo.com/mcp` |
+| MCP for AI agents | `paperboy mcp` over stdio | Remote server at `https://paperboyseo.com/mcp` |
+| Dashboard | CLI and API | Web dashboard |
+| Billing and plans | None | Yes |
 | Cross-site learning | No | Yes |
-| Hosted blog on your subdomain | Not in this repo yet (needs the web app) | Included |
-| Dashboard | CLI and API for now | Web dashboard |
-| Support | Community, GitHub issues | Email |
+| Support | GitHub issues | Email |
 
-**What is open and what is not.** The loop is open (AGPL-3.0). Three things stay closed because they cost money to run or to tune: the calibrated fact-check verifier (its prompts, passage selection and scoring weights), cross-site learning, and billing. The open code reaches the closed parts only through two small interfaces, so nothing here is crippled and nothing here is a fork. If you self-host, you get the baseline checker. If you use the cloud, you get the premium one. We say so plainly because "everything is open" would not be true.
+The loop is open under AGPL-3.0. The tuned verifier, cross-site learning and billing are not in this repository; the open code reaches the verifier only through the `Verifier` and `Judge` interfaces. Self-hosting for your own sites is free. If you modify Paperboy and offer it to other people as a service, the AGPL requires you to publish your changes.
 
-AGPL in one line: self-hosting for your own sites is free. If you modify it and offer it to other people as a service, you must publish your changes.
+## Configuration
 
-## Use with your agent
+Set these in `.env` (see [.env.example](.env.example)). Docker Compose also sets `DATABASE_URL`, `SERVER_DATABASE_URL` and `PAPERBOY_DB_SHIM` for you.
 
-**On the hosted cloud, today:** Paperboy runs a remote MCP server (Streamable HTTP) at `https://paperboyseo.com/mcp`, authenticated with your `pb_live_` API key. Its tools are `get_sites`, `suggest_topics`, `write_article`, `get_article`, `check_claims`, `publish_article`, `get_performance` and `get_queries`. `write_article` defaults to `publish: false`, so the agent asks before anything goes live. Setup for Claude Code, Cursor and Codex is in the [MCP docs](https://paperboyseo.com/docs/mcp); for Claude Code it is one line:
+| Variable | Needed | Default | What it does |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | To write | none | Research, writing and the model judge. Without it only `check` works, with `RuleJudge`. |
+| `POSTGRES_PASSWORD` | Yes | none | Superuser password of the bundled Postgres. Used by the migration job. |
+| `PAPERBOY_DB_PASSWORD` | Yes | none | Password of the `paperboy_server` role the app connects as. Set on every start. |
+| `APP_SECRET` | Yes | none | At least 24 characters. Signs OAuth state and email links. |
+| `PAPERBOY_ADMIN_EMAIL`, `PAPERBOY_ADMIN_PASSWORD` | Yes | none | The operator account, created on start. The password (8+ characters) approves CLI logins. |
+| `NEXT_PUBLIC_APP_URL` | No | `http://localhost:3000` | Public URL, used in links and the Google redirect. |
+| `PORT` | No | `3000` | API server port inside the container. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | No | none | Your Google OAuth client, for Search Console. Scope: `webmasters.readonly`. |
+| `RESEND_API_KEY`, `EMAIL_FROM` | No | none | Report and approval emails through Resend. Without a key emails are logged and skipped. |
+| `PAPERBOY_ARTICLES_PER_WEEK` | No | `0` in `.env.example` | Articles per site per week that the worker starts on its own. `0` means only when you run `paperboy write`, so nothing is spent until you ask. Unset, the site's plan decides. |
+| `PAPERBOY_DEFAULT_PLAN` | No | `starter` | Pace for new sites when the variable above is unset: `starter` 3, `growth` 7, `pro` 14 per week. |
+| `PAPERBOY_APPROVAL_MODE` | No | `approve` | `approve`: an article that passes the fact check waits for `paperboy publish`. `autopilot`: it publishes by itself. |
+| `PAPERBOY_PUBLISH_METHOD` | No | `hosted` | Default publish target for new sites: `wordpress`, `ghost`, `webhook`, `hosted`, `prompt`. |
+| `SERPER_API_KEY` | No | none | A real Google top 10 for the SERP-strength gate. Without it a web search stands in. |
+| `SERP_STRONG_RANK` | No | `100000` | A domain ranked this high in the Tranco list counts as strong. Lower is looser. |
+| `PAPERBOY_VERIFIER`, `PAPERBOY_API_KEY`, `PAPERBOY_BASE_URL` | No | local | Set `PAPERBOY_VERIFIER=hosted` with a Cloud API key to use the hosted verifier. |
+| `PAPERBOY_BRAND_NAME`, `PAPERBOY_OPERATOR`, `POSTAL_ADDRESS`, `NEXT_PUBLIC_SUPPORT_EMAIL` | No | Paperboy | Names and address that appear in emails. |
+| `PAPERBOY_TRUST_PROXY` | No | off | Set to `1` behind a TLS-terminating proxy. |
+| `PAPERBOY_DB_SSL` | No | on, except `localhost` and `db` | Set to `disable` to turn TLS off for another host. |
+| `PAPERBOY_SEED_API_KEY_FILE` | No | none | Mint an API key at this path on start (mode 0600), for headless setups. |
+
+Per-article cost caps (6 web searches, 1.50 USD, 600,000 tokens) are in `packages/engine/src/config/models.ts`. An article that would cross one is stopped and held. Read [docs/self-host.md](docs/self-host.md) before you turn on the schedule.
+
+## MCP: use it from an AI agent
+
+`paperboy mcp` runs a Model Context Protocol server over stdio, using the same key and base URL as the rest of the CLI (run `paperboy connect` once, or set `PAPERBOY_BASE_URL` and `PAPERBOY_API_KEY`).
+
+```bash
+# Claude Code
+claude mcp add paperboy -- node /path/to/paperboy/packages/cli/dist/cli.js mcp
+```
+
+```json
+{
+  "mcpServers": {
+    "paperboy": {
+      "command": "node",
+      "args": ["/path/to/paperboy/packages/cli/dist/cli.js", "mcp"],
+      "env": { "PAPERBOY_BASE_URL": "http://localhost:3000", "PAPERBOY_API_KEY": "pb_live_..." }
+    }
+  }
+}
+```
+
+| Tool | Effect |
+|---|---|
+| `list_sites`, `suggest_topics`, `get_job`, `get_article`, `get_performance` | Read only. |
+| `fact_check` | Fact checks a URL or a Markdown draft. Fetches the pages it cites. |
+| `write_article` | Starts an article and returns a job id. Spends money on your Anthropic key. |
+| `publish_article` | Publishes an article. Makes content public. |
+
+The two tools with side effects say so in their descriptions, so clients ask before calling them. `write_article` never asks the server to publish; whether an article goes live on its own follows the site's approval setting. Tool contract: [docs/mcp.md](docs/mcp.md). On Paperboy Cloud the same thing is a remote server, with a `pb_live_` key:
 
 ```bash
 claude mcp add --transport http paperboy https://paperboyseo.com/mcp --header "Authorization: Bearer pb_live_..."
 ```
 
-**In this repository:** there is no MCP server code yet. What is here is the REST API ([docs/api.md](docs/api.md)) and the CLI, which any agent can call today with `--json` against your own server or the cloud. The planned open MCP server (stdio first) is specified in [docs/mcp.md](docs/mcp.md) and tracked in the [roadmap](ROADMAP.md). Agent plugins (Claude Code, Cursor, Codex, OpenClaw) are not shipped yet either.
+## The CLI
 
-## How the fact check works
+Every command takes `--json` and works against Cloud or your own server (`--base-url`, or `connect --self-host`).
 
-Nothing passes because it sounds right. Every article is checked against the exact text of the sources that were read while researching it.
+| Command | What it does |
+|---|---|
+| `paperboy connect [site-url]` | Sign in with the OAuth device flow, add your site, connect Search Console. |
+| `paperboy topics [-n 5]` | What it would write next and why: query, position, impressions, SERP-gate result. |
+| `paperboy write [--topic <id or text>] [--wait]` | Research, write, fact check. With no topic it picks one. |
+| `paperboy check <url or file.md>` | Fact check a page or draft. Exit code 1 on hold. |
+| `paperboy publish <article-id>` | Publish an approved article. |
+| `paperboy status` | Account, site, publish target, Search Console state, latest articles. |
+| `paperboy report [--days 28]` | Clicks, impressions and position. |
+| `paperboy mcp` | The MCP server above. |
 
-1. **Rules first.** Every number in a cited sentence must appear in the source text it links. Links must point at sources that were actually read. Banned claims, banned words and house style are matched exactly. A shown calculation is checked through its inputs.
-2. **Then a judge.** Each cited sentence is compared with the passages of its source most likely to support it. The judge answers `supported`, `partly supported` or `not supported`.
-3. **A verdict.** Every check ends in **VERIFIED** or **HELD**, with the quoted sentence, the problem and the fix. A held article gets one rewrite from that list and is checked again. If it still fails, it is not published.
-
-The judge is a plug: `RuleJudge` needs no model at all (it scores how much of a sentence's wording is in the source), `FastModelJudge` uses your own Anthropic key, and `HostedVerifier` makes one API call to the tuned verifier. Set `PAPERBOY_VERIFIER=hosted` and `PAPERBOY_API_KEY` to use it. More in [docs/fact-check.md](docs/fact-check.md).
+Exit codes: 0 ok, 1 fact check failed or nothing published, 2 error. Details and JSON shapes: [packages/cli/README.md](packages/cli/README.md). The REST API is in [docs/api.md](docs/api.md).
 
 ## What is in this repository
 
 | Path | Contents |
 |---|---|
-| `packages/engine` | Topic selection and the SERP-strength gate, research, writing, the fact check, publish adapters (WordPress, Ghost, webhook, plus the hosted-blog and paste-in-prompt adapters that need the web app), Search Console sync, the rank loop, and the self-host API server and worker. |
-| `packages/db` | Postgres migrations and the runner. |
-| `packages/cli` | The `paperboy` command line tool. |
-| `docs/` | Self-host guide, fact-check method, REST API, MCP plan. |
+| `packages/engine` | Topic selection and the SERP gate, research, writing, the fact check, publish adapters, Search Console sync, the rank loop, and the self-host API server and worker. |
+| `packages/db` | Postgres migrations and the runner. A test applies all of them to a fresh database. |
+| `packages/cli` | The `paperboy` command line tool and the MCP server. |
+| `docs/` | Self-host guide, fact-check method, REST API, MCP. |
 | `docker-compose.yml`, `Dockerfile` | One-command self-host. |
-
-## Cost control
-
-Writing costs real money on your own key. The engine stops an article that would cross a cap (6 web searches, 1.50 USD and 600,000 tokens by default, in `packages/engine/src/config/models.ts`) and holds it for review. Read [docs/self-host.md](docs/self-host.md) before you turn on the schedule.
 
 ## Contributing
 
-Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first (short rules: open an issue before a large change, checkable claims only, tests for behavior you change). Security reports go through [SECURITY.md](SECURITY.md). Everyone follows the [code of conduct](CODE_OF_CONDUCT.md).
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: open an issue before a large change, claims in docs must be checkable, tests for behavior you change. Security reports go to security@paperboyseo.com, see [SECURITY.md](SECURITY.md). Everyone follows the [code of conduct](CODE_OF_CONDUCT.md). What is planned is in the [roadmap](ROADMAP.md).
 
-## Star the repo
-
-If Paperboy saves you time, star the repo. It is the cheapest way to help other people find it.
-
-## Prefer it hosted?
-
-[Write your first article free at paperboyseo.com](https://paperboyseo.com). No card, you read the finished article before you pick a plan. The cloud adds the tuned fact-check verifier, the web dashboard, the hosted blog and the MCP server.
+If Paperboy saves you time, a star helps other people find it.
 
 ## License
 
-[AGPL-3.0](LICENSE). Copyright Hive Asset Group, LLC. The name and logo are not licensed: see [NOTICE](NOTICE).
-
-Operated by Hive Asset Group, LLC.
+[AGPL-3.0](LICENSE). Copyright Hive Asset Group, LLC. The name and logo are not licensed, see [NOTICE](NOTICE).

@@ -2,7 +2,7 @@
 import { lookup } from "node:dns/promises";
 import { parse, type HTMLElement } from "node-html-parser";
 
-const UA = "Mozilla/5.0 (compatible; PaperboyBot/1.0; +https://github.com/gleason24-sketch/paperboy)";
+const UA = "Mozilla/5.0 (compatible; PaperboyBot/1.0; +https://github.com/paperboyseo/paperboy)";
 
 export type Page = {
   url: string;

@@ -155,8 +155,17 @@ async function addSite(
 
   let link = created.data.gsc_connect_url;
   if (!link) {
-    const res = await api.post<{ url: string }>(`/api/v1/sites/${encodeURIComponent(site.id)}/gsc/connect`, {});
-    link = res.data.url;
+    try {
+      const res = await api.post<{ url: string }>(`/api/v1/sites/${encodeURIComponent(site.id)}/gsc/connect`, {});
+      link = res.data.url;
+    } catch (err) {
+      // A self-host without its own Google OAuth client can still write and fact check, just without Search Console data.
+      if (err instanceof CliError && err.code === 'gsc_not_configured') {
+        out.prompt('Search Console is not set up on this server (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET). Skipping it; see docs/self-host.md.');
+        return site;
+      }
+      throw err;
+    }
   }
   data['gsc_connect_url'] = link;
   out.prompt('Connect Google Search Console so Paperboy can read your data:');
