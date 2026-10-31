@@ -1,9 +1,9 @@
-// Signed tokens for OAuth state and one-click links. APP_SECRET must be a long random string (set in Netlify).
+// Signed tokens for OAuth state and one-click links. APP_SECRET must be a long random string (set in .env).
 import crypto from "node:crypto";
 
 const secret = () => {
   const s = process.env.APP_SECRET;
-  if (!s || s.length < 24) throw new Error("APP_SECRET is not set (or too short). See SETUP.md.");
+  if (!s || s.length < 24) throw new Error("APP_SECRET is not set (or too short). See docs/self-host.md.");
   return s;
 };
 

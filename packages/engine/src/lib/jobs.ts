@@ -85,10 +85,12 @@ export async function runJob(job: string, payload: Record<string, unknown> = {})
 export async function scheduleDue(): Promise<string[]> {
   const db = sql();
   const log: string[] = [];
-  const sites = await db`select * from sites where not paused`;
+  // PAPERBOY_ARTICLES_PER_WEEK=0 turns the schedule off: no new articles start by themselves, but stuck ones are still restarted below.
+  const override = process.env.PAPERBOY_ARTICLES_PER_WEEK?.trim();
+  const sites = override === "0" ? [] : await db`select * from sites where not paused`;
   for (const s of sites) {
-    // A self-hosted site has no billing: its plan only sets the pace. Unknown plans use PAPERBOY_ARTICLES_PER_WEEK (default 3).
-    const perWeek = PLANS[s.plan as PlanId]?.perWeek ?? (Number(process.env.PAPERBOY_ARTICLES_PER_WEEK) || 3);
+    // A self-hosted site has no billing: PAPERBOY_ARTICLES_PER_WEEK sets the pace when it is set, otherwise the site's plan does (default 3).
+    const perWeek = Number(override) || PLANS[s.plan as PlanId]?.perWeek || 3;
     const [c] = await db`select count(*) filter (where created_at > now() - interval '7 days' and status <> 'failed')::int week,
       count(*) filter (where status in ('planned','picking','researching','writing','checking','fixing','publishing'))::int flying,
       max(created_at) last from articles where site_id = ${s.id}`;

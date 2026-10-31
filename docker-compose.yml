@@ -1,10 +1,11 @@
 # Paperboy self-host: Postgres + API server + worker.
 #   cp .env.example .env   (fill it in)
 #   docker compose up --build
-# The server listens on http://localhost:3000.
+# The server listens on http://localhost:3000. Migrations run on every start (the `migrate` service), before the server and worker.
 
 x-app: &app
   build: .
+  image: paperboy-engine:local
   env_file: .env
   environment:
     SERVER_DATABASE_URL: postgres://paperboy_server:${PAPERBOY_DB_PASSWORD:?set PAPERBOY_DB_PASSWORD in .env}@db:5432/paperboy
@@ -31,6 +32,8 @@ services:
   migrate:
     <<: *app
     restart: "no"
+    healthcheck:
+      disable: true
     environment:
       SERVER_DATABASE_URL: postgres://paperboy_server:${PAPERBOY_DB_PASSWORD:?set PAPERBOY_DB_PASSWORD in .env}@db:5432/paperboy
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/paperboy
@@ -52,6 +55,8 @@ services:
   worker:
     <<: *app
     command: ["npx", "tsx", "src/server/worker.ts"]
+    healthcheck:
+      disable: true
     depends_on:
       migrate:
         condition: service_completed_successfully

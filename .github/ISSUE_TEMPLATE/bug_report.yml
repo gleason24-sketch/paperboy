@@ -2,6 +2,10 @@ name: Bug report
 description: Something does not work as documented.
 labels: ["bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do not paste API keys, your `.env` or database URLs. Security problems go to security@paperboyseo.com, not here.
   - type: textarea
     id: what
     attributes:
@@ -13,21 +17,36 @@ body:
     id: repro
     attributes:
       label: Steps to reproduce
-      description: Commands, flags, a small example. Remove keys and tokens first.
+      description: Commands, flags, a small example. For a fact-check bug, include the sentence, the source text and the verdict.
     validations:
       required: true
   - type: input
     id: version
     attributes:
       label: Version or commit
+      description: "`git rev-parse --short HEAD`, or the version from `paperboy --version`."
+    validations:
+      required: true
   - type: dropdown
     id: where
     attributes:
       label: Where does it run
-      options: [Docker Compose self-host, CLI against self-host, CLI against paperboyseo.com, Other]
+      options:
+        - Docker Compose self-host
+        - CLI or MCP against a self-host
+        - CLI or MCP against paperboyseo.com
+        - Engine from source
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Docker version if relevant, Node version for the CLI.
   - type: textarea
     id: logs
     attributes:
       label: Logs
-      description: Output with `--json` if you can. Do not paste API keys or your .env.
+      description: "`docker compose logs web worker migrate`, or the output with `--json`. Remove secrets first."
       render: shell

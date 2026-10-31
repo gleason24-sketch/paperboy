@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security issue
-    url: https://github.com/gleason24-sketch/paperboy/security/advisories/new
-    about: Report vulnerabilities privately. Do not open a public issue.
-  - name: Hosted product support
+    url: https://github.com/paperboyseo/paperboy/security/advisories/new
+    about: Report vulnerabilities privately, or email security@paperboyseo.com. Do not open a public issue.
+  - name: Paperboy Cloud support
     url: https://paperboyseo.com/contact
     about: Questions about paperboyseo.com accounts and billing.

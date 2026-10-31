@@ -6,9 +6,9 @@ import { readFileSync } from "node:fs";
 
 const j = (...p) => p.join("");
 const banned = [
-  j("ki", "mi"), j("moon", "shot"), j("net", "lify\\.app"), j("riot", "digital"), j("scott", "wilder"),
+  j("ki", "mi"), j("moon", "shot"), j("net", "lify\\.app"), j("riot", "digital"), j("sco", "ttwilder"),
   j("pick", "check"), j("get", "stash"), j("1811", "blueprint"), j("haul", "math"),
-  j("hub_", "secret"), j("sk_", "live_"), j("sk-", "ant-"), j("whsec", "_[A-Za-z0-9]"),
+  j("glea", "son24"), j("hub_", "secret"), j("sk_", "live_"), j("sk-", "ant-"), j("whsec", "_[A-Za-z0-9]"),
 ];
 const re = new RegExp(banned.join("|"), "i");
 // House style: no em or en dashes in prose. Code may handle them (the style check looks for them), so only docs and config are checked.

@@ -8,20 +8,16 @@ The command line for [Paperboy](https://paperboyseo.com), the open-source growth
 
 ## Install
 
-Run it without installing:
+`@paperboyseo/cli` is not on npm. Run it from a clone of the repository (Node 22 or newer):
 
 ```sh
-npx @paperboyseo/cli connect
-```
-
-Or install it globally and use the `paperboy` command (also available as `paperboy-seo`):
-
-```sh
-npm i -g @paperboyseo/cli
+git clone https://github.com/paperboyseo/paperboy.git && cd paperboy
+npm ci --prefix packages/cli && npm run build --prefix packages/cli
+alias paperboy="node $PWD/packages/cli/dist/cli.js"     # also available as paperboy-seo via the package bin
 paperboy connect
 ```
 
-Note: the unscoped npm package named `paperboy` is a different project, so `npx paperboy` will not run this CLI. Use `npx @paperboyseo/cli ...`.
+Note: the unscoped npm package named `paperboy` is a different project, so do not `npx paperboy`.
 
 ## Quick start
 
@@ -81,7 +77,7 @@ Starts an article job. `--topic` takes a topic id from `paperboy topics`, or fre
 paperboy check <url|file.md> [--sources sources.txt]
 ```
 
-Fact-checks a live URL or a local markdown file. `--sources` is a text file with one source URL or note per line (blank lines and lines starting with `#` are ignored). Claims are reported as VERIFIED, HELD, UNSUPPORTED or MISMATCH. The exit code is 0 when the check passes and 1 when it does not, so it drops straight into CI:
+Fact-checks a live URL or a local markdown file. `--sources` is a text file with one extra source URL per line (blank lines and lines starting with `#` are ignored). Claims are reported as VERIFIED, HELD, UNSUPPORTED or MISMATCH. The exit code is 0 when the check passes and 1 when it does not, so it drops straight into CI:
 
 ```sh
 paperboy check docs/launch-post.md || exit 1
@@ -110,6 +106,14 @@ paperboy report [--days 28] [--markdown]
 ```
 
 Prints totals (clicks, impressions, average position, CTR), a unicode sparkline of daily clicks and the last seven days. With `--markdown` the server renders a full markdown report instead.
+
+### mcp
+
+```sh
+paperboy mcp
+```
+
+Runs a Model Context Protocol server on stdio, so an AI agent can use the commands above as tools (`list_sites`, `suggest_topics`, `write_article`, `get_job`, `get_article`, `fact_check`, `publish_article`, `get_performance`). It uses the same key and base URL as every other command. Setup for Claude Code, Claude Desktop and Cursor: [docs/mcp.md](../../docs/mcp.md).
 
 ## Choosing a site
 
@@ -173,7 +177,7 @@ Or per command: `paperboy topics --base-url http://localhost:3000`, or set `PAPE
 ## Development
 
 ```sh
-npm install
+npm ci
 npm run build
 npm test
 ```
