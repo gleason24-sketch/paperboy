@@ -13,7 +13,7 @@ The tools are `get_sites`, `suggest_topics`, `write_article`, `get_article`, `ch
 ## Skill, any agent (skills CLI)
 
 ```bash
-npx skills add gleason24-sketch/paperboy
+npx skills add paperboyseo/paperboy
 ```
 
 This uses the [skills CLI](https://github.com/vercel-labs/skills) and finds `skills/paperboy/SKILL.md`. Add `--agent claude-code`, `--agent cursor`, `--agent codex` and so on to pick targets, or `--list` to see what is in the repo first.
@@ -23,7 +23,7 @@ This uses the [skills CLI](https://github.com/vercel-labs/skills) and finds `ski
 Plugin (skill and MCP server together):
 
 ```text
-/plugin marketplace add gleason24-sketch/paperboy
+/plugin marketplace add paperboyseo/paperboy
 /plugin install paperboy@paperboy
 ```
 
@@ -81,10 +81,10 @@ or `openclaw skills install paperboy`. The skill source is [`integrations/opencl
 ## Hermes Agent
 
 ```bash
-hermes skills install gleason24-sketch/paperboy/skills/paperboy
+hermes skills install paperboyseo/paperboy/skills/paperboy
 ```
 
-Or add the repository as a tap with `hermes skills tap add gleason24-sketch/paperboy`. A copy in Hermes frontmatter is in [`integrations/hermes/paperboy`](../integrations/hermes/paperboy). Set `PAPERBOY_API_KEY` in `~/.hermes/.env` or your shell.
+Or add the repository as a tap with `hermes skills tap add paperboyseo/paperboy`. A copy in Hermes frontmatter is in [`integrations/hermes/paperboy`](../integrations/hermes/paperboy). Set `PAPERBOY_API_KEY` in `~/.hermes/.env` or your shell.
 
 ## Self-hosted
 
