@@ -175,7 +175,7 @@ claude mcp add --transport http paperboy https://paperboyseo.com/mcp --header "A
 One line for the skill and the hosted MCP server in Claude Code, Cursor, Codex, OpenClaw and Hermes Agent:
 
 ```bash
-npx skills add gleason24-sketch/paperboy
+npx skills add paperboyseo/paperboy
 ```
 
 Per-agent steps, including the Claude Code plugin, are in [docs/agents.md](docs/agents.md).
