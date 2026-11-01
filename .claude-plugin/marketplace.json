@@ -1,0 +1,15 @@
+{
+  "name": "paperboy",
+  "description": "Paperboy, the SEO article engine that fact checks every claim against its source, for Claude Code.",
+  "owner": {
+    "name": "Paperboy",
+    "url": "https://paperboyseo.com"
+  },
+  "plugins": [
+    {
+      "name": "paperboy",
+      "source": "./plugins/paperboy",
+      "description": "Suggest SEO topics, write fact-checked articles, publish and read Search Console numbers through the hosted Paperboy MCP server."
+    }
+  ]
+}

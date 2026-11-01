@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "paperboy": {
+      "type": "http",
+      "url": "https://paperboyseo.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${PAPERBOY_API_KEY}"
+      }
+    }
+  }
+}
