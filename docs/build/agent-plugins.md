@@ -39,18 +39,12 @@ UNVERIFIED:
 ## Before this works for real users
 
 1. Push, and make sure `.claude-plugin/marketplace.json`, `skills/` and `plugins/` are on the repo default branch (the branch `bot/initial` is not enough). `/plugin marketplace add <owner>/paperboy` reads the default branch.
-2. Move the repo to the `paperboyseo` org (see below).
+2. The repo is in the `paperboyseo` org.
 3. Optionally publish the OpenClaw skill and submit the plugin to Anthropic's directory (needs the human).
 
-## Owner string: `gleason24-sketch`
+## Owner
 
-When the repo moves to `paperboyseo`, find and replace `gleason24-sketch` in:
-- `README.md` (Install in your coding agent section)
-- `docs/agents.md`
-- `plugins/paperboy/.claude-plugin/plugin.json` (`repository`)
-- `docs/build/agent-plugins.md` (this file)
-
-`marketplace.json`, the skills and the generated copies do not contain it. Note that older text in README.md and docs already points at `paperboyseo/paperboy`.
+The repo lives at `paperboyseo/paperboy` (moved 2026-11-01).
 
 ## Continuing
 
