@@ -63,6 +63,10 @@ There is no sign-off or CLA step. By opening a pull request you license your con
 
 The tuned fact-check verifier, cross-site learning and billing live in a private repository. The open code talks to them through two interfaces only: `Verifier` (`packages/engine/src/lib/quality/verifier.ts`) and `Judge` (`packages/engine/src/lib/quality/types.ts`). Pull requests that add a hard dependency on anything outside this repository will be declined. Improvements to the open rule checks and the open judge are very welcome.
 
+## Releases
+
+Maintainers: the weekly release routine and the post generator are described in [RELEASING.md](RELEASING.md).
+
 ## Reporting bugs and security issues
 
 Bugs and ideas: use the issue templates. Security: email security@paperboyseo.com, see [SECURITY.md](SECURITY.md), and do not open a public issue.
