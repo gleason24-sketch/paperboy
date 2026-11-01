@@ -15,6 +15,9 @@ const re = new RegExp(banned.join("|"), "i");
 const dash = new RegExp(`[${String.fromCharCode(0x2014)}${String.fromCharCode(0x2013)}]`);
 // Generic lists that legitimately name a shared host.
 const allow = { "packages/engine/src/config/serp-gate.ts": [j("net", "lify\\.app")] };
+// Install commands name the repo owner until the repo moves to the paperboyseo org. Remove these when it does.
+const ownerRepo = j("glea", "son24-sketch");
+for (const f of ["README.md", "docs/agents.md", "docs/build/agent-plugins.md", "plugins/paperboy/.claude-plugin/plugin.json"]) allow[f] = [ownerRepo];
 // Obvious test fixtures (11111111-1111-4111-8111-111111111111) are fine; real-looking ids are not.
 const fakeUuid = /\b([0-9a-f])\1{7}-\1{4}-[1-5]\1{3}-[89ab]\1{3}-\1{12}\b/i;
 const uuid = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i;
