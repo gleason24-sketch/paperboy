@@ -1,0 +1,14 @@
+{
+  "name": "paperboy",
+  "displayName": "Paperboy",
+  "version": "0.1.0",
+  "description": "SEO articles with a fact check: suggest topics, write, check claims, publish and read Search Console numbers through the hosted Paperboy MCP server.",
+  "author": {
+    "name": "Paperboy",
+    "url": "https://paperboyseo.com"
+  },
+  "homepage": "https://paperboyseo.com",
+  "repository": "https://github.com/gleason24-sketch/paperboy",
+  "license": "AGPL-3.0-only",
+  "keywords": ["seo", "content", "fact-check", "search-console", "mcp"]
+}
