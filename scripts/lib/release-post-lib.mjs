@@ -82,9 +82,10 @@ const PREFIX_KIND = { feat: "feat", feature: "feat", fix: "fix", bugfix: "fix", 
 export function classifyCommit(subject) {
   const p = subject.match(/^(\w+)(?:\([^)]*\))?!?:\s/);
   if (p) return PREFIX_KIND[p[1].toLowerCase()] ?? "other";
-  if (/\b(fix|fixes|fixed|bug|crash|regression|patch)\b/i.test(subject)) return "fix";
-  if (/\b(docs?|readme|changelog|documentation|contributing)\b/i.test(subject)) return "docs";
-  if (/^(add|adds|added|new|support|introduce|implement|launch)\b|\bfeature\b/i.test(subject)) return "feat";
+  // Anchored on the first words: "align docs" or "self-host fixes" later in a long subject must not decide the group.
+  if (/^(fix|fixes|fixed|bugfix|patch|hotfix)\b/i.test(subject)) return "fix";
+  if (/^(docs?|readme|changelog|document|documentation|update (the )?(readme|docs|changelog))\b/i.test(subject)) return "docs";
+  if (/^(add|adds|added|new|support|introduce|implement)\b/i.test(subject)) return "feat";
   return "other";
 }
 
@@ -157,11 +158,10 @@ export function pickHeadline(section) {
 }
 
 const TOPIC = {
-  factcheck: "checking every claim against its saved source",
-  loop: "the Search Console loop",
-  agent: "driving it from an AI agent",
-  selfhost: "running it yourself with Docker Compose",
-  other: null,
+  factcheck: ["checking every claim against its saved source", "that checks every claim against its saved source"],
+  loop: ["the Search Console loop", "with a Search Console feedback loop"],
+  agent: ["driving it from an AI agent", "you can drive from an AI agent"],
+  selfhost: ["running it yourself with Docker Compose", "you can run with one docker compose up"],
 };
 
 /** Everything the templates need, derived once. */
@@ -170,14 +170,15 @@ export function buildContext({ section, previous = null, commits = [], roadmap =
   const headline = pickHeadline(section);
   const kind = bulletKind(headline);
   const lead = leadOf(headline);
-  const topic = TOPIC[kind] ?? lowerFirst(plain(lead));
+  const topic = TOPIC[kind]?.[0] ?? lowerFirst(plain(lead));
+  const blurb = TOPIC[kind]?.[1] ?? `with ${topic}`;
   const first = !previous;
   const bullets = section.bullets.map((text) => ({ text, kind: bulletKind(text) }));
   const preRelease = /^0\./.test(version);
   const name = section.name ?? (first ? "First public release" : plain(lead));
   const repoBlob = (p) => `${repoUrl}/blob/HEAD/${p}`;
   return {
-    version, tag: `v${version}`, date: section.date, name, headline, headlineKind: kind, headlineLead: lead, topic,
+    version, tag: `v${version}`, date: section.date, name, headline, headlineKind: kind, headlineLead: lead, topic, blurb,
     first, preRelease, bullets, commits, groups: groupCommits(commits), roadmap, since,
     upgradeBullets: section.bullets.filter((b) => /migrat|renumber|breaking|renamed|default|upgrade/i.test(b)),
     cliOnNpm, links: {
@@ -240,7 +241,7 @@ export function renderGithubRelease(ctx) {
 
 ${bl(ctx.bullets)}
 
-${commitBlock ? `## Changes by type\n\n${commitBlock}\n\n` : ""}## Upgrade notes
+${commitBlock ? `<details>\n<summary>Changes by type (${ctx.commits.length} commits)</summary>\n\n${commitBlock}\n\n</details>\n\n` : ""}## Upgrade notes
 
 ${upgrade}
 
@@ -259,7 +260,7 @@ export function renderReddit(ctx) {
   const selfhost = ctx.bullets.filter((b) => b.kind === "selfhost");
   const rest = ctx.bullets.filter((b) => b.kind !== "selfhost");
   return {
-    title: `[Release] Paperboy ${ctx.tag}: self-hosted SEO article engine, now ${ctx.topic} (AGPL-3.0, Docker Compose, your own keys)`,
+    title: `[Release] Paperboy ${ctx.tag}: self-hosted SEO article engine ${ctx.blurb} (AGPL-3.0, Docker Compose, your own keys)`,
     body: `${DISCLOSURE(ctx)}
 
 Paperboy reads your Google Search Console, picks a topic you can rank for, researches it, writes the article, checks the draft against the source text it saved while researching, and publishes to WordPress, Ghost or a webhook. ${ctx.tag} is out${ctx.date ? ` (${ctx.date})` : ""}.
@@ -279,7 +280,7 @@ What leaves your machine: calls to the Anthropic API (research, writing, the mod
 
 **What is in ${ctx.tag}**
 
-${selfhost.length ? `Self-host:\n\n${bl(selfhost)}\n\n` : ""}${rest.length ? `${selfhost.length ? "The rest:\n\n" : ""}${bl(rest)}\n\n` : ""}**Limits, so you do not find them the hard way**
+${selfhost.length ? `Self-host and database:\n\n${bl(selfhost)}\n\n` : ""}${rest.length ? `${selfhost.length ? "Engine, CLI and agents:\n\n" : ""}${bl(rest)}\n\n` : ""}**Limits, so you do not find them the hard way**
 
 ${list(LIMITS(ctx))}
 
@@ -368,8 +369,9 @@ Docs: ${ctx.links.docs}
 
 export function renderIndieHackers(ctx) {
   const next = ctx.roadmap.slice(0, 2);
+  const short = (t) => plain(t).split(/[:,]/)[0].trim();
   const q = next.length === 2
-    ? `If you had to pick one, which would you want first: "${plain(next[0])}" or "${plain(next[1])}"?`
+    ? `If you had to pick one, which would you want first: "${short(next[0])}" or "${short(next[1])}"?`
     : "What would make you trust a tool like this enough to let it publish on its own?";
   return {
     title: `What I shipped in Paperboy ${ctx.tag}, and what I am still unsure about`,
@@ -378,7 +380,7 @@ export function renderIndieHackers(ctx) {
 **Why this release exists**
 
 ${ctx.first
-  ? "I wanted the core loop out in the open so people can read it, run it and tell me where it is wrong. The loop: pick a topic from Search Console data, research it, write it, check every claim against the saved source, publish, then learn from what Search Console shows."
+  ? "This is the first public cut: the core loop is now open, so you can read it, run it and tell me where it is wrong. The loop: pick a topic from Search Console data, research it, write it, check every claim against the saved source, publish, then learn from what Search Console shows."
   : `The main goal was ${ctx.topic}. The rest is the usual cleanup that piles up in a week.`}
 
 **What shipped**
@@ -387,7 +389,7 @@ ${bl(ctx.bullets)}
 
 **What I would do differently**
 
-${ctx.first ? "I parked the CI workflows in a folder because the token that created the repository could not push workflow files. So pull requests are not checked automatically yet; I run typecheck and tests by hand. Not great, and on the list." : "Nothing dramatic this time, but the limits below are real and I would rather you hear them from me."}
+${ctx.first ? "I parked the CI workflows in a folder because the token that created the repository could not push workflow files. So pull requests are not checked automatically yet; I run typecheck and tests by hand until that is fixed." : "Nothing dramatic this time, but the limits below are real and I would rather you hear them from me."}
 
 **Honest limits**
 
@@ -449,7 +451,9 @@ Code and issues: ${ctx.links.repo}. Docs: ${ctx.links.docs}.`,
 }
 
 export function renderLemmy(ctx) {
-  const top = ctx.bullets.slice(0, 5);
+  // The headline, then the first bullet of each other kind, so the short list is not five bullets about one thing.
+  const top = [ctx.bullets.find((b) => b.text === ctx.headline)].filter(Boolean);
+  for (const b of ctx.bullets) if (top.length < 4 && !top.some((t) => t.kind === b.kind) && !/^first\b/i.test(b.text)) top.push(b);
   return {
     title: `Paperboy ${ctx.tag}: self-hosted SEO article engine (AGPL-3.0, Docker Compose)`,
     body: `Repo: ${ctx.links.repo}

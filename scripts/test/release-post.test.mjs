@@ -63,6 +63,8 @@ test("groups commits by prefix and keywords", () => {
   assert.equal(classifyCommit("Update README"), "docs");
   assert.equal(classifyCommit("Add self-host API server"), "feat");
   assert.equal(classifyCommit("Rename things"), "other");
+  assert.equal(classifyCommit("Launch polish: README, self-host fixes, MCP"), "other");
+  assert.equal(classifyCommit("Add self-host server; align docs"), "feat");
   const g = groupCommits([{ sha: "1", subject: "feat: a b", body: "" }, { sha: "2", subject: "Rename things", body: "" }]);
   assert.equal(g.feat[0].title, "a b");
   assert.equal(g.other.length, 1);
